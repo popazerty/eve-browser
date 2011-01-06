@@ -41,16 +41,12 @@ JSValueRef
 c_o_bindToCurrentChannel (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
     size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
 {
-    /*printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
-
-    printJSObjectRef(ctx, function);
-
-    printJSObjectRef(ctx, thisObject);
+    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
 
     for(unsigned int i = 0; i < argumentCount; i++)
     {
-        printJSValueRef(ctx, arguments[i]);
-    }*/
+        printJSValueRef(ctx, arguments[i], exception);
+    }
 
     return NULL;
 }

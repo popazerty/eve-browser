@@ -7,6 +7,8 @@
 #include <webkit/webkit.h>
 #include <JavaScriptCore/JavaScript.h>
 
+#include <linux/input.h>
+
 #include "js_extension.h"
 #include "css_extension.h"
 
@@ -23,6 +25,9 @@ static guint status_context_id;
 static GtkWidget* window ;
 static GtkWidget* vbox;
 
+unsigned int g_framebuffer_width = 1280;
+unsigned int g_framebuffer_height = 720;
+float g_default_scale = 1.0f;
 ///////////////////////////
 ///////////////////////////
 
@@ -214,13 +219,13 @@ toogleMode (void)
     printf("%s > \n", __func__);
     if(isShown)
     {
-        gtk_widget_set_size_request(vbox, 1280, 720);
+        gtk_widget_set_size_request(vbox, g_framebuffer_width, g_framebuffer_height);
         gtk_widget_hide(GTK_WIDGET (main_statusbar));
         gtk_widget_hide(GTK_WIDGET (toolbar));
     }
     else
     {
-        gtk_widget_set_size_request(vbox, 1080, 720);
+        gtk_widget_set_size_request(vbox, g_framebuffer_width-200, g_framebuffer_height);
         gtk_widget_show(GTK_WIDGET (main_statusbar));
         gtk_widget_show(GTK_WIDGET (toolbar));
 
@@ -248,7 +253,7 @@ static void handleZoomLock(int value)
     else if(value < 0)
         webkit_web_view_zoom_out(web_view);
     else
-        webkit_web_view_set_zoom_level(web_view, 1.0f);
+        webkit_web_view_set_zoom_level(web_view, g_default_scale );
 }
 
 static gboolean
@@ -256,9 +261,43 @@ on_key_press (GtkWidget* widget, GdkEventKey *event, gpointer data)
 {
     if (event->type == GDK_KEY_PRESS)
     {
-        printf("KeyPress: %02X\n", event->keyval);
-        printf("KeyState: %02X\n", event->state);
-        printf("KeyString: %s\n", event->string);
+        /*printf("event +++\n");
+        printf("event->send_event: %02X\n", event->send_event);
+        printf("event->state: %02X\n", event->state);
+        printf("event->keyval: %02X\n", event->keyval);
+        printf("event->length: %02X\n", event->length);
+        printf("event->string: %s\n",  event->string);
+        printf("event->hardware_keycode: %02X\n", event->hardware_keycode);
+        printf("event->group: %02X\n", event->group);
+        printf("event->is_modifier: %02X\n", event->is_modifier);
+        printf("event ---\n");*/
+
+        /* GDK has a bug regarding keycode capturing with greater codes than 128. this clause corrects this error */
+        /* At the moment only KEY_OK to GDK_Return mapping is checked (proof of concept) */
+        if(event->keyval == 0xFFFFFF)
+        {
+            printf("%s:%s[%d] corrupt keyval (%d)\n", __FILE__, __func__, __LINE__, event->hardware_keycode);
+            gboolean rtv;
+            int corrected = 0;
+            switch(event->hardware_keycode)
+            {
+                case KEY_OK:
+                    event->keyval = GDK_Return;
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+                default:
+                    corrected = 0;
+                    break;
+            }
+                   
+            if(corrected) {
+                printf("%s:%s[%d] corrected\n", __FILE__, __func__, __LINE__);
+                gtk_signal_emit_by_name(GTK_OBJECT (window), "key-press-event", event, &rtv);
+            }
+            return true;
+        }
+
 
         if(gIsZoomLock)
         {
@@ -406,25 +445,25 @@ on_key_press (GtkWidget* widget, GdkEventKey *event, gpointer data)
 
 static gboolean expose_event(GtkWidget * widget, GdkEventExpose * event)
 {
-printf("%s\n", __func__);
-cairo_t *cr;
+    printf("%s\n", __func__);
+    cairo_t *cr;
 
-cr = gdk_cairo_create(GDK_DRAWABLE(widget->window));
-gdk_cairo_region(cr, event->region);
-cairo_clip(cr);
+    cr = gdk_cairo_create(GDK_DRAWABLE(widget->window));
+    gdk_cairo_region(cr, event->region);
+    cairo_clip(cr);
 
-cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
-cairo_paint(cr);
-cairo_destroy(cr);
-return false;
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
+    cairo_paint(cr);
+    cairo_destroy(cr);
+    return false;
 }
 
 static GtkWidget*
 create_window ()
 {
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_default_size (GTK_WINDOW (window), 1280, 720);
+    gtk_window_set_default_size (GTK_WINDOW (window), g_framebuffer_width, g_framebuffer_height);
     gtk_widget_set_name (window, "eve-browser");
     gtk_window_set_decorated(GTK_WINDOW(window), false);
 
@@ -448,6 +487,26 @@ create_window ()
 int
 main (int argc, char* argv[])
 {
+    printf("%s:%s[%d]\n", __FILE__, __func__, __LINE__);
+    unsigned char haveUrl = 0;
+    int argCount = argc - 1;
+
+    printf("%s:%s[%d] argCount=%d\n", __FILE__, __func__, __LINE__, argCount);
+
+    for(int i = 0; i < argCount; i++)
+    {
+        if     (!strncmp("-s", argv[1 + i], 2))
+        {
+            printf("%s:%s[%d] parameter scale %s\n", __FILE__, __func__, __LINE__, argv[1 + i]);
+            
+            sscanf(argv[1 + i], "%dx%d", &g_framebuffer_width, &g_framebuffer_height);
+            i++;
+            printf("%s:%s[%d] fw=%d fh=%d\n", __FILE__, __func__, __LINE__, g_framebuffer_width, g_framebuffer_height);
+        }
+        else
+            haveUrl = 1; 
+    }
+
     gtk_init (&argc, &argv);
     if (!g_thread_supported ())
         g_thread_init (NULL);
@@ -463,24 +522,24 @@ main (int argc, char* argv[])
     main_window = create_window ();
 
     gtk_fixed_put(GTK_FIXED(fixed), vbox, 0, 0);
-    gtk_widget_set_size_request(vbox, 1280, 720);
+    gtk_widget_set_size_request(vbox, g_framebuffer_width, g_framebuffer_height);
 
     GtkWidget* statusLabel = gtk_label_new ("Status");
-    gtk_fixed_put(GTK_FIXED(fixed), statusLabel, 1080, 0);
+    gtk_fixed_put(GTK_FIXED(fixed), statusLabel, g_framebuffer_width - 200, 0);
     gtk_widget_set_size_request(statusLabel, 200, 100);
-
-
-
 
     gtk_container_add (GTK_CONTAINER (main_window), fixed);
 
-    gchar* uri = (gchar*) (argc > 1 ? argv[1] : "http://www.google.com/");
+    gchar* uri = (gchar*) (haveUrl ? argv[argCount] : "http://www.google.com/");
     webkit_web_view_load_uri (web_view, uri);
 
     gtk_widget_grab_focus (GTK_WIDGET (web_view));
     gtk_widget_show_all (main_window);
 
     toogleMode();
+
+    g_default_scale = g_framebuffer_width / 1280.0f;
+    handleZoomLock(0);
 
     gtk_main ();
 
