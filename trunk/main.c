@@ -7,7 +7,8 @@
 #include <webkit/webkit.h>
 #include <JavaScriptCore/JavaScript.h>
 
-
+#include "js_extension.h"
+#include "css_extension.h"
 
 static GtkWidget* main_window;
 static GtkWidget* uri_entry;
@@ -22,248 +23,17 @@ static guint status_context_id;
 static GtkWidget* window ;
 static GtkWidget* vbox;
 
-static void setTransparent(GtkWidget *widget);
-
 ///////////////////////////
-
-
-void printJSStringRef(JSStringRef string)
-{
-    unsigned int len = JSStringGetLength(string);
-    char * buffer = (char * )malloc(len+1);
-    JSStringGetUTF8CString(string, buffer, len+1);
-    printf("%s", buffer);
-    free(buffer);
-}
-
-void printJSObjectRef(JSContextRef ctx, JSObjectRef argument)
-{
-
-    JSPropertyNameArrayRef names = JSObjectCopyPropertyNames(ctx, argument);
-    unsigned int propertySize = JSPropertyNameArrayGetCount(names);
-    printf("%s > (propertySize=%d)\n", __func__, propertySize);
-    for(unsigned int i = 0; i < propertySize; i++)
-    {
-        JSStringRef name = JSPropertyNameArrayGetNameAtIndex(names, i);
-        printf("[%2d] ", i); printJSStringRef(name); printf("\n");
-    }
-    printf("%s < \n", __func__);
-}
-
-void printJSValueRef(JSContextRef ctx, JSValueRef argument, JSValueRef *exception)
-{
-    printf("%s > \n", __func__);
-    JSType type = JSValueGetType(ctx, argument);
-    switch(type)
-    {
-    case kJSTypeUndefined: printf("kJSTypeUndefined\n"); break;
-    case kJSTypeNull: printf("kJSTypeNull\n"); break;
-    case kJSTypeBoolean: 
-        printf("kJSTypeBoolean\n"); 
-        printf("%s\n", JSValueToBoolean(ctx, argument)?"True":"False"); 
-        break;
-    case kJSTypeNumber: 
-        printf("kJSTypeNumber\n"); 
-        printf("%f\n", JSValueToNumber(ctx, argument, exception)); 
-        break;
-
-    case kJSTypeString: 
-        printf("kJSTypeString\n"); 
-        JSStringRef s;
-        s = JSValueToStringCopy(ctx, argument, exception);
-        printJSStringRef(s); 
-        JSStringRelease(s);
-        break;
-
-    case kJSTypeObject: 
-        printf("kJSTypeObject\n"); 
-        JSObjectRef o = JSValueToObject(ctx, argument, exception);
-        printJSObjectRef(ctx, o); 
-        break;
-
-    }
-    printf("%s < \n", __func__);
-}
-
-
-
 ///////////////////////////
-
-// HTMLObjectElement - Bindings
-// Visibility setting is a workaround to get video object invisible 
-char s_o_bindToCurrentChannel[] = 
-    "HTMLObjectElement.prototype.bindToCurrentChannel = function() { \
-    c_o_bindToCurrentChannel(); \
-    document.getElementById(\"video\").style.visibility = \"hidden\"; \
-}";
-
-JSValueRef
-c_o_bindToCurrentChannel (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
-    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
-{
-    /*printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
-
-    printJSObjectRef(ctx, function);
-
-    printJSObjectRef(ctx, thisObject);
-
-    for(unsigned int i = 0; i < argumentCount; i++)
-    {
-        printJSValueRef(ctx, arguments[i]);
-    }*/
-
-    return NULL;
-}
-
-char s_o_getChannelConfig[] = 
-"HTMLObjectElement.prototype.getChannelConfig = function() {\
-    c_o_getChannelConfig(); \
-	return new Channel();\
-}";
-
-JSValueRef
-c_o_getChannelConfig (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
-    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
-{
-    printf("%s - CALLED\n", __func__);
-    return NULL;
-}
-
-char s_o_play[] = 
-"HTMLObjectElement.prototype.play = function(speed) {\
-    c_o_play(speed, this.data); \
-}";
-
-JSValueRef
-c_o_play (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
-    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
-{
-    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
-
-    for(unsigned int i = 0; i < argumentCount; i++)
-    {
-        printJSValueRef(ctx, arguments[i], exception);
-    }
-
-    return NULL;
-}
-
-char s_o_stop[] = 
-"HTMLObjectElement.prototype.stop = function() {\
-    c_o_stop(); \
-}";
-
-JSValueRef
-c_o_stop (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
-    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
-{
-    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
-
-    for(unsigned int i = 0; i < argumentCount; i++)
-    {
-        printJSValueRef(ctx, arguments[i], exception);
-    }
-
-    return NULL;
-}
-
-char s_o_release[] = 
-"HTMLObjectElement.prototype.release = function() {\
-    c_o_release(); \
-}";
-
-JSValueRef
-c_o_release (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
-    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
-{
-    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
-
-    for(unsigned int i = 0; i < argumentCount; i++)
-    {
-        printJSValueRef(ctx, arguments[i], exception);
-    }
-
-    return NULL;
-}
-
-char s_o_setFullScreen[] = 
-"HTMLObjectElement.prototype.setFullScreen = function(show) {\
-    c_o_setFullScreen(show); \
-}";
-
-JSValueRef
-c_o_setFullScreen (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
-    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
-{
-    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
-
-    for(unsigned int i = 0; i < argumentCount; i++)
-    {
-        printJSValueRef(ctx, arguments[i], exception);
-    }
-
-    return NULL;
-}
-
-char s_o_seek[] = 
-"HTMLObjectElement.prototype.seek = function(millis) {\
-    c_o_seek(millis); \
-}";
-
-JSValueRef
-c_o_seek (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
-    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
-{
-    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
-
-    for(unsigned int i = 0; i < argumentCount; i++)
-    {
-        printJSValueRef(ctx, arguments[i], exception);
-    }
-
-    return NULL;
-}
-
-///////////////////////////
-
-// Registering single funxtions
-void register_javascript_function(const char *name, JSObjectCallAsFunctionCallback callback)
-{
-    WebKitWebFrame *frame = webkit_web_view_get_main_frame(WEBKIT_WEB_VIEW(web_view));
-    JSContextRef ctx = webkit_web_frame_get_global_context(frame);
-    JSObjectRef global = JSContextGetGlobalObject(ctx);
-    JSObjectRef func = JSObjectMakeFunctionWithCallback(ctx, NULL, callback);
-    JSStringRef jsname = JSStringCreateWithUTF8CString(name);
-    JSObjectSetProperty(ctx, global, jsname, func,0, NULL);
-    JSStringRelease(jsname);
-}
 
 static void window_object_cleared_cb(   WebKitWebView *frame,
                                         gpointer context,
                                         gpointer arg3,
                                         gpointer user_data)
 {
-    //JSGlobalContextRef jsContext = webkit_web_frame_get_globale_context(frame);
-    //adJSClasses(jsContext)
     printf("window_object_cleared_cb\n");
 
-    webkit_web_view_execute_script(web_view, s_o_bindToCurrentChannel);
-    register_javascript_function("c_o_bindToCurrentChannel", c_o_bindToCurrentChannel);
-
-    webkit_web_view_execute_script(web_view, s_o_play);
-    register_javascript_function("c_o_play", c_o_play);
-
-    webkit_web_view_execute_script(web_view, s_o_stop);
-    register_javascript_function("c_o_stop", c_o_stop);
-
-    webkit_web_view_execute_script(web_view, s_o_release);
-    register_javascript_function("c_o_release", c_o_release);
-
-    webkit_web_view_execute_script(web_view, s_o_setFullScreen);
-    register_javascript_function("c_o_setFullScreen", c_o_setFullScreen);
-
-    webkit_web_view_execute_script(web_view, s_o_seek);
-    register_javascript_function("c_o_seek", c_o_seek);
+    registerJsFunctions(web_view);
 }
 
 ///////////////////////7
@@ -343,53 +113,10 @@ focus_out_cb (GtkWidget* widget, GdkEvent * event, gpointer data)
 static void
 document_load_finished_cb (GtkWidget* widget, WebKitWebFrame * arg1, gpointer data)
 {
-//char scriptBackgroundColor[] = "document.styleSheets[0].insertRule(\'a{backgroundColor=\"#FF0000\";}\',0);";
+    registerCssExtension(web_view);
 
-/*char scriptBackgroundColor[] = "var cssTags = document.getElementsByTagName(\"style\"); \
-var cssTag = cssTags[0]; \
-alert(cssTag.innerText); \
-                      cssTag.innerText += \'a { backgroundColor = \"#FF0000\"; }\'; \
-alert(cssTag.innerText);";*/
-
-/*char scriptBackgroundColor[] = "var cssTag = document.createElement(\"style\"); \
-                      cssTag.type = \"text/css\"; \
-                      cssTag.innerHtml = \'a { backgroundColor = \"#FF0000\"; }\'; \
-                      document.getElementsByTagName(\"head\")[0].appendChild(cssTag);";*/
-/*
-                      cssTag.getElementsByTagName.innerHtml = \'a { backgroundColor = \"#FF0000\" }\'; \
-
-char scriptBackgroundColor[] = "var a = document.getElementsByTagName(\"a\"); \
-                for(var i=0;i<a.length;i++){ \
-                     a[i].style.backgroundColor = \"#FFA4A4\"; \
-                     a[i].style.border = \"#FF0000 solid medium\"; \
-                     a[i].style.borderRadius = \"15px\"; \
-                 }";*/
-//webkit_web_view_execute_script(web_view, scriptBackgroundColor);
-
-
-/*char scriptHover[] = "var cssTag = document.createElement(\"style\"); \
-                      cssTag.setAttribute(\"type\",\"text/css\"); \
-                      cssTag.innerHtml = \'a:focus { backgroundColor = \"#00FF00\" }\'; \
-                      document.body.appendChild(cssTag);";*/
-
-/*char scriptHover[] = "var a = document.getElementsByTagName(\"*\"); \
-                for(var i=0;i<a.length;i++){ \
-					 a[i].onfocus = function() { \
-                                                this.style.backgroundColor= \"#87FF87\"; \
-                                                this.style.border = \"#00FF00 solid medium\"; \
-                                                this.style.borderRadius = \"15px\"; \
-                     }; \
-					 a[i].onblur = function() { \
-                                                this.style.backgroundColor= \"#FFA4A4\"; \
-                                                this.style.border = \"#FF0000 solid medium\"; \
-                                                this.style.borderRadius = \"15px\"; \
-                     }; \
-                 }";
-
-webkit_web_view_execute_script(web_view, scriptHover);*/
-
-//char scriptError[] = "alert(hbbtvlib_lastError);";
-//webkit_web_view_execute_script(web_view, scriptError);
+    // Only use if debugging is needed
+    //registerSpecialJsFunctions(web_view);
 }
 
 
@@ -415,8 +142,6 @@ create_browser ()
     web_view = WEBKIT_WEB_VIEW (webkit_web_view_new ());
     webkit_web_view_set_transparent(web_view, true);
     gtk_container_add (GTK_CONTAINER (scrolled_window), GTK_WIDGET (web_view));
-    //setTransparent(GTK_WIDGET (scrolled_window));
-    //setTransparent(GTK_WIDGET (web_view));
     webkit_web_view_set_full_content_zoom(web_view, true);
 
     g_signal_connect (web_view, "notify::title", G_CALLBACK (notify_title_cb), web_view);
@@ -469,6 +194,9 @@ create_toolbar ()
     return toolbar;
 }
 
+/**
+ * This toogles the background of the window
+ **/
 static void
 toogleBackground (void)
 {
@@ -697,7 +425,7 @@ create_window ()
 {
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_default_size (GTK_WINDOW (window), 1280, 720);
-    gtk_widget_set_name (window, "GtkLauncher");
+    gtk_widget_set_name (window, "eve-browser");
     gtk_window_set_decorated(GTK_WINDOW(window), false);
 
     GdkScreen *screen = gtk_widget_get_screen(window);
