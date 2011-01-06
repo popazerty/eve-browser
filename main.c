@@ -263,9 +263,9 @@ on_key_press (GtkWidget* widget, GdkEventKey *event, gpointer data)
     {
         /*printf("event +++\n");
         printf("event->send_event: %02X\n", event->send_event);
-        printf("event->state: %02X\n", event->state);
+        printf("event->state: %02X\n", event->state);*/
         printf("event->keyval: %02X\n", event->keyval);
-        printf("event->length: %02X\n", event->length);
+/*        printf("event->length: %02X\n", event->length);
         printf("event->string: %s\n",  event->string);
         printf("event->hardware_keycode: %02X\n", event->hardware_keycode);
         printf("event->group: %02X\n", event->group);
@@ -273,7 +273,6 @@ on_key_press (GtkWidget* widget, GdkEventKey *event, gpointer data)
         printf("event ---\n");*/
 
         /* GDK has a bug regarding keycode capturing with greater codes than 128. this clause corrects this error */
-        /* At the moment only KEY_OK to GDK_Return mapping is checked (proof of concept) */
         if(event->keyval == 0xFFFFFF)
         {
             printf("%s:%s[%d] corrupt keyval (%02X)\n", __FILE__, __func__, __LINE__, event->hardware_keycode);
@@ -286,26 +285,55 @@ on_key_press (GtkWidget* widget, GdkEventKey *event, gpointer data)
                     event->state = 0;
                     corrected = 1;
                     break;
+
                 case KEY_RED:
-                    event->keyval = GDK_F5;
+                    event->keyval = 't'; //GDK_F5;
                     event->state = 0;
                     corrected = 1;
                     break;
                 case KEY_GREEN:
-                    event->keyval = GDK_F5;
+                    event->keyval = 'u'; //GDK_F5;
                     event->state = 0;
                     corrected = 1;
                     break;
                 case KEY_YELLOW:
-                    event->keyval = GDK_F7;
+                    event->keyval = 'v'; //GDK_F7;
                     event->state = 0;
                     corrected = 1;
                     break;
                 case KEY_BLUE:
-                    event->keyval = GDK_F8;
+                    event->keyval = 'w'; //GDK_F8;
                     event->state = 0;
                     corrected = 1;
                     break;
+
+                case KEY_PLAY:
+                    event->keyval = 'P';
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+                case KEY_PAUSE:
+                    event->keyval = 'P'; // PAUSE IS Q but it seems that P is Toggle PlayPause
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+                case KEY_STOP:
+                    event->keyval = 'S';
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+
+                case KEY_REWIND:
+                    event->keyval = 'R';
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+                case KEY_FASTFORWARD:
+                    event->keyval = 'F';
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+
                 default:
                     corrected = 0;
                     break;

@@ -6,12 +6,30 @@
 #include <webkit/webkit.h>
 #include <JavaScriptCore/JavaScript.h>
 
+int JSValueToString(JSContextRef ctx, JSValueRef argument, JSValueRef *exception, char ** string)
+{
+    JSType type = JSValueGetType(ctx, argument);    
+    if(type != kJSTypeString)
+        return -1;
+
+    JSStringRef s;
+    s = JSValueToStringCopy(ctx, argument, exception);
+
+    unsigned int len = JSStringGetLength(s);
+    *string = (char * )malloc(len+1);
+    JSStringGetUTF8CString(s, *string, len+1);
+
+    JSStringRelease(s);
+    return strlen(*string);
+}
+
+
 void printJSStringRef(JSStringRef string)
 {
     unsigned int len = JSStringGetLength(string);
     char * buffer = (char * )malloc(len+1);
     JSStringGetUTF8CString(string, buffer, len+1);
-    printf("%s", buffer);
+    printf("%s\n", buffer);
     free(buffer);
 }
 
