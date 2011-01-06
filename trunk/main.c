@@ -276,13 +276,33 @@ on_key_press (GtkWidget* widget, GdkEventKey *event, gpointer data)
         /* At the moment only KEY_OK to GDK_Return mapping is checked (proof of concept) */
         if(event->keyval == 0xFFFFFF)
         {
-            printf("%s:%s[%d] corrupt keyval (%d)\n", __FILE__, __func__, __LINE__, event->hardware_keycode);
+            printf("%s:%s[%d] corrupt keyval (%02X)\n", __FILE__, __func__, __LINE__, event->hardware_keycode);
             gboolean rtv;
             int corrected = 0;
             switch(event->hardware_keycode)
             {
                 case KEY_OK:
                     event->keyval = GDK_Return;
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+                case KEY_RED:
+                    event->keyval = GDK_F5;
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+                case KEY_GREEN:
+                    event->keyval = GDK_F5;
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+                case KEY_YELLOW:
+                    event->keyval = GDK_F7;
+                    event->state = 0;
+                    corrected = 1;
+                    break;
+                case KEY_BLUE:
+                    event->keyval = GDK_F8;
                     event->state = 0;
                     corrected = 1;
                     break;
