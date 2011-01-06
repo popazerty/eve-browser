@@ -11,6 +11,9 @@ This file contains the js <-> c bindings
 #include <JavaScriptCore/JavaScript.h>
 
 #include "js_debug.h"
+#ifdef __sh__
+#include "libeplayer3.h"
+#endif
 
 /******************************************/
 
@@ -85,8 +88,34 @@ c_o_play (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject,
         float speed = JSValueToNumber(ctx, arguments[0], exception);
         char * url = NULL;
         int urlLen = JSValueToString(ctx, arguments[1], exception, &url);
-        if(urlLen > 0) 
+        if(urlLen > 0) {
+            char urlZdfBad[] = "http://www.metafilegenerator.de/ondemand/zdf/hbbtv/geoloc_zdf-none/";
+            if(!strncmp(url, urlZdfBad, strlen(urlZdfBad)))
+            {
+                char urlZdf[] = "mms://ondemand.msmedia.zdf.newmedia.nacamar.net/zdf/data/msmedia/zdf/";
+                int urlFixedLen = strlen(urlZdf) + strlen(url) - strlen(urlZdfBad);
+                char urlFixed[urlFixedLen];
+                strncpy(urlFixed, urlZdf, strlen(urlZdf));
+                strncpy(urlFixed + strlen(urlZdf), url + strlen(urlZdfBad), strlen(url) - strlen(urlZdfBad));
+
+                free(url);
+                url = (char*)malloc(sizeof(char) * (urlFixedLen+2));
+                strncpy(url, urlFixed, urlFixedLen);
+                url[urlFixedLen - 3] = 'w';
+                url[urlFixedLen - 2] = 'm';
+                url[urlFixedLen - 1] = 'v';
+                url[urlFixedLen] = '\0';
+                url[urlFixedLen+1] = '\0'; // bug in libeplayer3 for mms
+            }
             printf("%s:%s[%d] speed=%f url=%s [%d]\n", __FILE__, __func__, __LINE__, speed, url, urlLen);
+
+#ifdef __sh__
+            play(url);
+#endif
+            // http://www.metafilegenerator.de/ondemand/zdf/hbbtv/geoloc_zdf-none/11/01/110103_aerzte_06_01_11_mtk_vh.mp4
+            // mms://ondemand.msmedia.zdf.newmedia.nacamar.net/zdf/data/msmedia/zdf/11/01/110103_aerzte_06_01_11_mtk_vh.wmv
+            // rtsp://ondemand.quicktime.zdf.newmedia.nacamar.net/zdf/data/quicktime/zdf/11/01/110103_aerzte_06_01_11_mtk_vh.mp4
+        }
     }
 
     return NULL;
