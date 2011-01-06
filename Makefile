@@ -15,7 +15,7 @@ INCPATH       = -I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/include \
 -I.
 LINK          = sh4-linux-g++
 LFLAGS        = -Wl,-O1
-LIBS          = $(SUBLIBS)  -L/opt/STM/STLinux-2.3/devkit/sh4/target/usr/lib -lwebkit-1.0
+LIBS          = $(SUBLIBS)  -L/opt/STM/STLinux-2.3/devkit/sh4/target/usr/lib -lwebkit-1.0 -leplayer3 -lpng -lm -lass -lpthread -lavformat -lavdevice
 AR            = sh4-linux-ar cqs
 RANLIB        = sh4-linux-ranlib
 
@@ -25,7 +25,7 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = main.c js_debug.c js_extension.c css_extension.c
+SOURCES       = main.c js_debug.c js_extension.c css_extension.c libeplayer3.c
 
 TARGET        = eve-browser
 
