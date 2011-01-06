@@ -76,9 +76,17 @@ c_o_play (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject,
 {
     printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
 
-    for(unsigned int i = 0; i < argumentCount; i++)
+    /*for(unsigned int i = 0; i < argumentCount; i++)
     {
         printJSValueRef(ctx, arguments[i], exception);
+    }*/
+
+    if(argumentCount == 2) {
+        float speed = JSValueToNumber(ctx, arguments[0], exception);
+        char * url = NULL;
+        int urlLen = JSValueToString(ctx, arguments[1], exception, &url);
+        if(urlLen > 0) 
+            printf("%s:%s[%d] speed=%f url=%s [%d]\n", __FILE__, __func__, __LINE__, speed, url, urlLen);
     }
 
     return NULL;
