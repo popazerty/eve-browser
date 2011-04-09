@@ -15,6 +15,8 @@ This file contains the js <-> c bindings
 #include "libeplayer3.h"
 #endif
 
+static int (*g_Callback)(int type) = NULL;
+
 /******************************************/
 
 // Registering single funxtions
@@ -31,6 +33,113 @@ void register_javascript_function(WebKitWebView* web_view, const char *name, JSO
 
 
 /******************************************/
+
+char s_o_ApplicationManager[] = 
+"function ApplicationManager() {\
+}";
+
+
+char s_o_getOwnerApplication[] = 
+"HTMLObjectElement.prototype.getOwnerApplication = function(document) {\
+    c_o_getOwnerApplication(document); \
+    return new ApplicationManager(); \
+}";
+
+JSValueRef
+c_o_getOwnerApplication (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
+    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
+{
+    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
+
+    for(unsigned int i = 0; i < argumentCount; i++)
+    {
+        printJSValueRef(ctx, arguments[i], exception);
+    }
+
+    return NULL;
+}
+
+
+char s_o_ApplicationManager_createApplication[] = 
+"ApplicationManager.prototype.createApplication = function(url, unknown) {\
+    window.location.href = url; \
+    c_o_ApplicationManager_createApplication(url, unknown); \
+    return true; \
+}";
+
+JSValueRef
+c_o_ApplicationManager_createApplication (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
+    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
+{
+    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
+
+    for(unsigned int i = 0; i < argumentCount; i++)
+    {
+        printJSValueRef(ctx, arguments[i], exception);
+    }
+
+    return NULL;
+}
+
+char s_o_ApplicationManager_destroyApplication[] = 
+"ApplicationManager.prototype.destroyApplication = function() {\
+    c_o_ApplicationManager_destroyApplication(); \
+    return true; \
+}";
+
+JSValueRef
+c_o_ApplicationManager_destroyApplication (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
+    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
+{
+    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
+
+    for(unsigned int i = 0; i < argumentCount; i++)
+    {
+        printJSValueRef(ctx, arguments[i], exception);
+    }
+
+    return NULL;
+}
+
+char s_o_ApplicationManager_show[] = 
+"ApplicationManager.prototype.show = function() {\
+    c_o_ApplicationManager_show(); \
+    return true; \
+}";
+
+JSValueRef
+c_o_ApplicationManager_show (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
+    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
+{
+    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
+
+    for(unsigned int i = 0; i < argumentCount; i++)
+    {
+        printJSValueRef(ctx, arguments[i], exception);
+    }
+
+    return NULL;
+}
+
+char s_o_ApplicationManager_hide[] = 
+"ApplicationManager.prototype.hide = function() {\
+    c_o_ApplicationManager_hide(); \
+    return true; \
+}";
+
+JSValueRef
+c_o_ApplicationManager_hide (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, 
+    size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
+{
+    printf("%s - CALLED (argumentCount=%d)\n", __func__, argumentCount);
+
+    for(unsigned int i = 0; i < argumentCount; i++)
+    {
+        printJSValueRef(ctx, arguments[i], exception);
+    }
+
+    return NULL;
+}
 
 // HTMLObjectElement - Bindings
 // Visibility setting is a workaround to get video object invisible 
@@ -50,6 +159,9 @@ c_o_bindToCurrentChannel (JSContextRef ctx, JSObjectRef function, JSObjectRef th
     {
         printJSValueRef(ctx, arguments[i], exception);
     }
+
+    if(g_Callback != NULL)
+        g_Callback(100);
 
     return NULL;
 }
@@ -199,8 +311,28 @@ c_o_seek (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject,
 
 ///////////////////////////////////77
 
-void registerJsFunctions(WebKitWebView* web_view)
+void registerJsFunctions(WebKitWebView* web_view, int (*fnc)(int type))
 {
+    g_Callback = fnc;
+
+    webkit_web_view_execute_script(web_view, s_o_getOwnerApplication);
+    register_javascript_function(web_view, "c_o_getOwnerApplication", c_o_getOwnerApplication);
+
+    webkit_web_view_execute_script(web_view, s_o_ApplicationManager);
+    //register_javascript_function(web_view, "c_o_ApplicationManager", c_o_ApplicationManager);
+
+    webkit_web_view_execute_script(web_view, s_o_ApplicationManager_createApplication);
+    register_javascript_function(web_view, "c_o_ApplicationManager_createApplication", c_o_ApplicationManager_createApplication);
+
+    webkit_web_view_execute_script(web_view, s_o_ApplicationManager_destroyApplication);
+    register_javascript_function(web_view, "c_o_ApplicationManager_destroyApplication", c_o_ApplicationManager_destroyApplication);
+
+    webkit_web_view_execute_script(web_view, s_o_ApplicationManager_show);
+    register_javascript_function(web_view, "c_o_ApplicationManager_show", c_o_ApplicationManager_show);
+
+    webkit_web_view_execute_script(web_view, s_o_ApplicationManager_hide);
+    register_javascript_function(web_view, "c_o_ApplicationManager_hide", c_o_ApplicationManager_hide);
+
     webkit_web_view_execute_script(web_view, s_o_bindToCurrentChannel);
     register_javascript_function(web_view, "c_o_bindToCurrentChannel", c_o_bindToCurrentChannel);
 
@@ -218,6 +350,7 @@ void registerJsFunctions(WebKitWebView* web_view)
 
     webkit_web_view_execute_script(web_view, s_o_seek);
     register_javascript_function(web_view, "c_o_seek", c_o_seek);
+
 }
 
 // This function can be used to force displaying hbbtvlib errors
@@ -225,5 +358,9 @@ void registerSpecialJsFunctions(WebKitWebView* web_view)
 {
     char scriptError[] = "alert(hbbtvlib_lastError);";
     webkit_web_view_execute_script(web_view, scriptError);
+
+    	
+
+
 }
 

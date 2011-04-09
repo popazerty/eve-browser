@@ -26,6 +26,7 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = main.c js_debug.c js_extension.c css_extension.c libeplayer3.c
+OBJECTS       = main.o js_debug.o js_extension.o css_extension.o libeplayer3.o
 
 TARGET        = eve-browser
 
@@ -54,4 +55,8 @@ first: all
 all: Makefile $(TARGET)
 
 $(TARGET):  $(OBJECTS)  
-	$(CXX) $(CXXFLAGS) $(INCPATH) $(LFLAGS) -o $(TARGET) $(SOURCES) $(OBJCOMP) $(LIBS)
+	$(CXX) $(CXXFLAGS) $(INCPATH) $(LFLAGS) -o $(TARGET) $(SOURCES) $(OBJCOMP) $(LIBS); \
+    $(CXX) -fPIC $(INCPATH) -c $(SOURCES); \
+    $(CXX) -shared -W1,-E,-soname,lib$(TARGET).so.0 -o lib$(TARGET).so.0.0.0 $(OBJECTS) $(LIBS)
+    
+    
