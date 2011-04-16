@@ -1,23 +1,28 @@
-CC            = sh4-linux-gcc
-CXX           = sh4-linux-g++
+
+
+TUFSBOX="/home/schischu/git/at7500/tdt/tufsbox"
+BINS="${TUFSBOX}/devkit/sh4/bin"
+CDK="${TUFSBOX}/cdkroot"
+
+
+CC            = ${BINS}/sh4-linux-gcc
+CXX           = ${BINS}/sh4-linux-g++
 CFLAGS        = -std=c99 -pipe -Os -Wall -W -D_REENTRANT $(DEFINES)
 CXXFLAGS      = -pipe -Os -Wall -W -D_REENTRANT $(DEFINES)
-INCPATH       = -I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/include \
--I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/include/glib-2.0 \
--I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/lib/gtk-2.0/include \
--I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/include/pango-1.0 \
--I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/include/webkit-1.0 \
--I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/include/gtk-2.0 \
--I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/lib/glib-2.0/include \
--I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/include/cairo \
--I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/include/atk-1.0 \
--I/opt/STM/STLinux-2.3/devkit/sh4/target/usr/include/libsoup-2.4 \
+INCPATH       = -I${CDK}/usr/include \
+-I${CDK}/usr/include/glib-2.0 \
+-I${CDK}/usr/lib/gtk-2.0/include \
+-I${CDK}/usr/include/webkit-1.0 \
+-I${CDK}/usr/include/gtk-2.0 \
+-I${CDK}/usr/lib/glib-2.0/include \
+-I${CDK}/usr/include/libsoup-2.4 \
+-I${CDK}/usr/include/directfb \
 -I.
-LINK          = sh4-linux-g++
+LINK          = ${BINS}/sh4-linux-g++
 LFLAGS        = -Wl,-O1
-LIBS          = $(SUBLIBS)  -L/opt/STM/STLinux-2.3/devkit/sh4/target/usr/lib -lwebkit-1.0 -leplayer3 -lpng -lm -lass -lpthread -lavformat -lavdevice
-AR            = sh4-linux-ar cqs
-RANLIB        = sh4-linux-ranlib
+LIBS          = $(SUBLIBS)  -L${CDK}/usr/lib -lwebkitgtk-1.0 -lpng -lm  -lpthread
+AR            = ${BINS}/sh4-linux-ar cqs
+RANLIB        = ${BINS}/sh4-linux-ranlib
 
 ####### Output directory
 
@@ -25,8 +30,11 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = main.c js_debug.c js_extension.c css_extension.c libeplayer3.c
-OBJECTS       = main.o js_debug.o js_extension.o css_extension.o libeplayer3.o
+SOURCES       = main.cpp js_extension.c js_debug.c
+OBJECTS       = main.o js_extension.o js_debug.o
+
+#SOURCES       = main.c js_debug.c js_extension.c css_extension.c
+#OBJECTS       = main.o js_debug.o js_extension.o css_extension.o
 
 TARGET        = eve-browser
 
@@ -55,8 +63,8 @@ first: all
 all: Makefile $(TARGET)
 
 $(TARGET):  $(OBJECTS)  
-	$(CXX) $(CXXFLAGS) $(INCPATH) $(LFLAGS) -o $(TARGET) $(SOURCES) $(OBJCOMP) $(LIBS); \
-    $(CXX) -fPIC $(INCPATH) -c $(SOURCES); \
-    $(CXX) -shared -W1,-E,-soname,lib$(TARGET).so.0 -o lib$(TARGET).so.0.0.0 $(OBJECTS) $(LIBS)
+	$(CXX) -DDFB $(CXXFLAGS) $(INCPATH) $(LFLAGS) -o $(TARGET) $(SOURCES) $(OBJCOMP) $(LIBS); \
+	$(CXX) -DDFB -fPIC $(INCPATH) -c $(SOURCES); \
+	$(CXX) -shared -W1,-E,-soname,lib$(TARGET).so.0 -o lib$(TARGET).so.0.0.0 $(OBJECTS) $(LIBS)
     
     

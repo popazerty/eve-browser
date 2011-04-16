@@ -2,45 +2,229 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <string.h>
-
 #include <pthread.h>
+#include <linux/input.h>
+
+#define DFB
+
+#ifdef GTK
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <webkit/webkit.h>
-#include <JavaScriptCore/JavaScript.h>
+#endif
 
-#include <linux/input.h>
+#ifdef DFB
+#include <direct/thread.h>
+
+#include <glib.h>
+#include <glib-object.h>
+
+#include <lite/lite.h>
+#include <lite/window.h>
+
+#include <leck/textbutton.h>
+#include <leck/textline.h>
+
+#include <webkit/webkitdfb.h>
+#include <webkit/webview.h>
+#endif
+
+#include <JavaScriptCore/JavaScript.h>
 
 #include "js_extension.h"
 #include "css_extension.h"
 
+static int (*g_Callback)(int type);
+static pthread_t g_BrowserMain;
+static char g_url[1024];
+static unsigned int g_framebuffer_width = 1280;
+static unsigned int g_framebuffer_height = 720;
 
+#ifdef DFB
+static LiteWindow     *g_window   = NULL;
+static LiteWebView    *g_webview  = NULL;
+#endif
+
+////////////////////////////////////////////
+
+//Should be changed to setPage and loadPage
+void loadPage(char * url)
+{
+    printf("%s URL = %s\n", __func__, url);
+    strncpy(g_url, url, 1024);
+/*#ifdef GTK
+    webkit_web_view_load_uri (g_web_view, g_url);
+#else //DFB
+    lite_webview_load(g_webview, g_url);
+#endif*/
+}
+
+void setDimension(int w, int h)
+{
+    printf("%s:%d\n", __func__, __LINE__);
+    g_framebuffer_width = w;
+    g_framebuffer_height = h;
+}
+
+void setCallback(int (*fnc)(int type))
+{
+    g_Callback = fnc;
+    g_Callback(0);
+}
+
+
+#ifdef DFB
+static DFBResult
+on_key_press( DFBWindowEvent* evt, void *ctx ) {
+
+    printf("evt->key_id: %02x\n", evt->key_id);
+
+    return DFB_OK;
+}
+
+#define KEY_TYPE_PRESS 0
+#define KEY_TYPE_RELEASE 1
+
+void keyPress(char * key, int type)
+{
+    printf("%s %s\n", __func__, key);
+
+    DFBInputEvent event;
+
+    if(type == KEY_TYPE_PRESS)
+        event.type = DIET_KEYPRESS;
+    else if(type == KEY_TYPE_RELEASE)
+        event.type = DIET_KEYRELEASE;
+    else
+        return;
+
+    event.flags    = (DFBInputEventFlags)(DIEF_KEYID | DIEF_KEYCODE);
+   
+    if     (!strcmp(key, "red"))
+        event.key_id = DIKI_F5; //'t';
+    else if(!strcmp(key, "green"))
+        event.key_id = DIKI_F6; //'u';
+    else if(!strcmp(key, "yellow"))
+        event.key_id = DIKI_F7; //'v';
+    else if(!strcmp(key, "blue"))
+        event.key_id = DIKI_F8; //'w';
+
+    else if(!strcmp(key, "up"))
+        event.key_id = DIKI_UP; //f643
+    else if(!strcmp(key, "down")) 
+        event.key_id = DIKI_DOWN; //f644
+    else if(!strcmp(key, "left"))
+        event.key_id = DIKI_LEFT;
+    else if(!strcmp(key, "right"))
+        event.key_id = DIKI_RIGHT;
+    
+    else if(!strcmp(key, "ok"))
+        event.key_id = DIKI_ENTER;
+
+    //TODO: Confirm these
+    else if(!strcmp(key, "play"))
+        event.key_id = DIKI_P;
+    else if(!strcmp(key, "pause"))
+        event.key_id = DIKI_P; // PAUSE IS Q but it seems that P is Toggle PlayPause
+    else if(!strcmp(key, "stop"))
+        event.key_id = DIKI_S;
+    else if(!strcmp(key, "rewind"))
+        event.key_id = DIKI_R;
+    else if(!strcmp(key, "fastforward"))
+        event.key_id = DIKI_F;
+
+    if(event.key_id != 0) {
+        DFBEvent evt;
+        evt.input = event;
+        lite_webview_handleKeyboardEvent( g_webview, evt );
+        return;
+    }
+
+    return;
+}
+
+void *BrowserMain(void * argument)
+{
+    printf("%s:%d\n", __func__, __LINE__);
+
+    int argc = 0;
+    char**argv = NULL;
+
+    unsigned char haveUrl = 0;
+    int argCount = 0;
+    
+    g_type_init();
+    g_thread_init(NULL);
+
+    lite_open( &argc, &argv );
+
+    WebKitDFB_Initialize( lite_get_dfb_interface() );
+
+    IDirectFBDisplayLayer *layer;
+    DFBDisplayLayerConfig  config;
+    lite_get_layer_interface( &layer );
+    layer->GetConfiguration( layer, &config );
+
+    DFBRectangle windowRect        = {   0,  0, config.width, config.height };
+    DFBRectangle webviewRect       = {   0,  0, config.width, config.height };
+
+    lite_new_window( NULL, &windowRect, DWCAPS_NONE, liteNoWindowTheme, "WebKitDFB", &g_window );
+
+    //webkit_set_lite_global_mainwin(window);
+
+    lite_new_webview( LITE_BOX(g_window), &webviewRect, liteDefaultWebViewTheme, &g_webview);
+
+    lite_on_raw_window_keyboard(g_window, on_key_press, g_webview );
+
+    lite_focus_box( LITE_BOX(g_webview) );
+
+    lite_set_window_opacity(g_window, 0xff);
+
+    registerJsFunctions(g_webview, g_Callback);
+
+    lite_webview_load(g_webview, "http://itv.ard.de/ardtext");
+
+    while (true) {
+        g_main_context_iteration(NULL, FALSE);
+        lite_window_event_loop(g_window, 20);
+    }
+
+   lite_close();
+
+   return NULL;
+}
+
+int
+main (int argc, char* argv[])
+{
+    pthread_create(&g_BrowserMain, NULL, BrowserMain, NULL);
+    while(1);
+
+    return 0;
+}
+
+#endif
+
+#ifdef GTK
 static GtkWidget* uri_entry;
 
 
 static GtkToolItem* itemUrl;
 static GtkScrolledWindow* scrolled_window;
-
-#if 0
-static gchar* main_title;
-static gdouble load_progress;
-#endif
 static guint status_context_id;
 
-static pthread_t g_GtkMain;
-static char g_url[1024];
 
-static int (*g_Callback)(int type);
+
+
+
 
 static GtkWidget*     g_window;
 static GtkWidget*     g_vbox;
-static GtkWidget*     g_main_window;
 static WebKitWebView* g_web_view;
 static GtkWidget*     g_toolbar;
 static GtkStatusbar*  g_main_statusbar;
 
-unsigned int g_framebuffer_width = 1280;
-unsigned int g_framebuffer_height = 720;
+
 float g_default_scale = 1.0f;
 ///////////////////////////
 ///////////////////////////
@@ -65,20 +249,6 @@ activate_uri_entry_cb (GtkWidget* entry, gpointer data)
     webkit_web_view_load_uri (g_web_view, uri);
 }
 
-#if 0
-static void
-update_title (GtkWindow* window)
-{
-    GString* string = g_string_new (main_title);
-    g_string_append (string, " - WebKit Launcher");
-    if (load_progress < 100)
-        g_string_append_printf (string, " (%f%%)", load_progress);
-    gchar* title = g_string_free (string, FALSE);
-    gtk_window_set_title (window, title);
-    g_free (title);
-}
-#endif
-
 static void
 link_hover_cb (WebKitWebView* page, const gchar* title, const gchar* link, gpointer data)
 {
@@ -87,17 +257,6 @@ link_hover_cb (WebKitWebView* page, const gchar* title, const gchar* link, gpoin
     if (link)
         gtk_statusbar_push (g_main_statusbar, status_context_id, link);
 }
-
-#if 0
-static void
-notify_title_cb (WebKitWebView* web_view, GParamSpec* pspec, gpointer data)
-{
-    if (main_title)
-        g_free (main_title);
-    main_title = g_strdup (webkit_web_view_get_title(web_view));
-    update_title (GTK_WINDOW (g_main_window));
-}
-#endif
 
 static void
 notify_load_status_cb (WebKitWebView* web_view, GParamSpec* pspec, gpointer data)
@@ -109,15 +268,6 @@ notify_load_status_cb (WebKitWebView* web_view, GParamSpec* pspec, gpointer data
             gtk_entry_set_text (GTK_ENTRY (uri_entry), uri);
     }
 }
-
-#if 0
-static void
-notify_progress_cb (WebKitWebView* web_view, GParamSpec* pspec, gpointer data)
-{
-    load_progress = webkit_web_view_get_progress (web_view) * 100;
-    update_title (GTK_WINDOW (g_main_window));
-}
-#endif
 
 static void
 destroy_cb (GtkWidget* widget, gpointer data)
@@ -169,13 +319,7 @@ create_browser ()
     gtk_container_add (GTK_CONTAINER (scrolled_window), GTK_WIDGET (g_web_view));
     webkit_web_view_set_full_content_zoom(g_web_view, true);
 
-#if 0
-    g_signal_connect (g_web_view, "notify::title", G_CALLBACK (notify_title_cb), g_web_view);
-#endif
     g_signal_connect (g_web_view, "notify::load-status", G_CALLBACK (notify_load_status_cb), g_web_view);
-#if 0
-    g_signal_connect (g_web_view, "notify::progress", G_CALLBACK (notify_progress_cb), g_web_view);
-#endif
     g_signal_connect (g_web_view, "hovering-over-link", G_CALLBACK (link_hover_cb), g_web_view);
 
     g_signal_connect (g_web_view, "focus-out-event", G_CALLBACK (focus_out_cb), g_web_view);
@@ -188,7 +332,15 @@ create_browser ()
 }
 
 static GtkWidget*
-create_statusbar ()
+create_statusbar ()void *GtkMain(void * argument)
+{
+    printf("%s:%d\n", __func__, __LINE__);
+
+    int argc = 0;
+    char**argv = NULL;
+
+    unsigned char haveUrl = 0;
+    int argCount = 0;
 {
     g_main_statusbar = GTK_STATUSBAR (gtk_statusbar_new ());
     gtk_widget_set_can_focus(GTK_WIDGET (g_main_statusbar), false);
@@ -606,7 +758,7 @@ void loadEveBrowser()
     gtk_box_pack_start (GTK_BOX (g_vbox), GTK_WIDGET (create_browser ()), TRUE, TRUE, 0);
     gtk_box_pack_start (GTK_BOX (g_vbox), create_statusbar (), FALSE, FALSE, 0);
     
-    g_main_window = create_window ();
+    g_window = create_window ();
     
     gtk_fixed_put(GTK_FIXED(fixed), g_vbox, 0, 0);
     gtk_widget_set_size_request(g_vbox, g_framebuffer_width, g_framebuffer_height);
@@ -615,7 +767,7 @@ void loadEveBrowser()
     gtk_fixed_put(GTK_FIXED(fixed), statusLabel, g_framebuffer_width - 200, 0);
     gtk_widget_set_size_request(statusLabel, 200, 100);
     
-    gtk_container_add (GTK_CONTAINER (g_main_window), fixed);
+    gtk_container_add (GTK_CONTAINER (g_window), fixed);
 }
 
 void unloadEveBrowser()
@@ -647,7 +799,7 @@ void *GtkMain(void * argument)
     gtk_box_pack_start (GTK_BOX (g_vbox), GTK_WIDGET (create_browser ()), TRUE, TRUE, 0);
     gtk_box_pack_start (GTK_BOX (g_vbox), create_statusbar (), FALSE, FALSE, 0);
 
-    g_main_window = create_window ();
+    g_window = create_window ();
 
     gtk_fixed_put(GTK_FIXED(fixed), g_vbox, 0, 0);
     gtk_widget_set_size_request(g_vbox, g_framebuffer_width, g_framebuffer_height);
@@ -656,12 +808,12 @@ void *GtkMain(void * argument)
     gtk_fixed_put(GTK_FIXED(fixed), statusLabel, g_framebuffer_width - 200, 0);
     gtk_widget_set_size_request(statusLabel, 200, 100);
 
-    gtk_container_add (GTK_CONTAINER (g_main_window), fixed);
+    gtk_container_add (GTK_CONTAINER (g_window), fixed);
 
     webkit_web_view_load_uri (g_web_view, g_url);
 
     gtk_widget_grab_focus (GTK_WIDGET (g_web_view));
-    gtk_widget_show_all (g_main_window);
+    gtk_widget_show_all (g_window);
 
     toogleMode();
 
@@ -684,100 +836,20 @@ void show()
 void hide()
 {
     printf("%s:%d\n", __func__, __LINE__);
-    gtk_widget_hide_all (g_main_window);
-}
-
-void loadPage(char * url)
-{
-    printf("%s URL = %s\n", __func__, url);
-    strncpy(g_url, url, 1024);
-    //webkit_web_view_load_uri (g_web_view, (gchar*) url);
-}
-
-void setDimension(int w, int h)
-{
-    printf("%s:%d\n", __func__, __LINE__);
-    g_framebuffer_width = w;
-    g_framebuffer_height = h;
+    gtk_widget_hide_all (g_window);
 }
 
 
-
-void setCallback(int (*fnc)(int type))
-{
-    g_Callback = fnc;
-
-    g_Callback(0);
-}
 
 
 
 int
 main (int argc, char* argv[])
 {
-#if 0
-    printf("%s:%s[%d]\n", __FILE__, __func__, __LINE__);
-    unsigned char haveUrl = 0;
-    int argCount = argc - 1;
-
-    printf("%s:%s[%d] argCount=%d\n", __FILE__, __func__, __LINE__, argCount);
-
-    for(int i = 0; i < argCount; i++)
-    {
-        if     (!strncmp("-s", argv[1 + i], 2))
-        {
-            printf("%s:%s[%d] parameter scale %s\n", __FILE__, __func__, __LINE__, argv[1 + i]);
-            
-            sscanf(argv[1 + i], "%dx%d", &g_framebuffer_width, &g_framebuffer_height);
-            i++;
-            printf("%s:%s[%d] fw=%d fh=%d\n", __FILE__, __func__, __LINE__, g_framebuffer_width, g_framebuffer_height);
-        }
-        else
-            haveUrl = 1; 
-    }
-
-    argc = 0;
-    argv= NULL;
-
-    gtk_init (&argc, &argv);
-    if (!g_thread_supported ())
-        g_thread_init (NULL);
-
-
-    GtkWidget* fixed = gtk_fixed_new();
-    //screen_changed(fixed, NULL, NULL);
-    g_vbox = gtk_vbox_new (FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (g_vbox), create_toolbar (), FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (g_vbox), GTK_WIDGET (create_browser ()), TRUE, TRUE, 0);
-    gtk_box_pack_start (GTK_BOX (g_vbox), create_statusbar (), FALSE, FALSE, 0);
-
-    g_main_window = create_window ();
-
-    gtk_fixed_put(GTK_FIXED(fixed), g_vbox, 0, 0);
-    gtk_widget_set_size_request(g_vbox, g_framebuffer_width, g_framebuffer_height);
-
-    GtkWidget* statusLabel = gtk_label_new ("Status");
-    gtk_fixed_put(GTK_FIXED(fixed), statusLabel, g_framebuffer_width - 200, 0);
-    gtk_widget_set_size_request(statusLabel, 200, 100);
-
-    gtk_container_add (GTK_CONTAINER (g_main_window), fixed);
-
-    gchar* uri = (gchar*) (haveUrl ? argv[argCount] : "http://www.google.com/");
-    webkit_web_view_load_uri (g_web_view, uri);
-
-    gtk_widget_grab_focus (GTK_WIDGET (g_web_view));
-    gtk_widget_show_all (g_main_window);
-
-    toogleMode();
-
-    g_default_scale = g_framebuffer_width / 1280.0f;
-    handleZoomLock(0);
-
-    gtk_main ();
-#endif
     pthread_create(&g_GtkMain, NULL, GtkMain, NULL);
     while(1);
 
     return 0;
 }
+#endif
 

@@ -3,7 +3,6 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include <webkit/webkit.h>
 #include <JavaScriptCore/JavaScript.h>
 
 int JSValueToString(JSContextRef ctx, JSValueRef argument, JSValueRef *exception, char ** string)
