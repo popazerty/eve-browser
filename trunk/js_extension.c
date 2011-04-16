@@ -7,23 +7,40 @@ This file contains the js <-> c bindings
 #include <sys/stat.h>
 #include <string.h>
 
+#ifdef GTK
 #include <webkit/webkit.h>
+#else //DFB
+#include <webkit/webkitdfb.h>
+#include <webkit/webview.h>
+#endif
 #include <JavaScriptCore/JavaScript.h>
 
 #include "js_debug.h"
-#ifdef __sh__
-#include "libeplayer3.h"
-#endif
 
 static int (*g_Callback)(int type) = NULL;
 
 /******************************************/
 
-// Registering single funxtions
-void register_javascript_function(WebKitWebView* web_view, const char *name, JSObjectCallAsFunctionCallback callback)
+#ifdef DFB
+void webkit_web_view_execute_script(LiteWebView* web_view, char* script)
 {
+    lite_webview_execute_script(web_view, script);
+}
+#endif
+
+// Registering single funxtions
+#ifdef GTK
+void register_javascript_function(WebKitWebView* web_view, const char *name, JSObjectCallAsFunctionCallback callback)
+#else //DFB
+void register_javascript_function(LiteWebView* web_view, const char *name, JSObjectCallAsFunctionCallback callback)
+#endif
+{
+#ifdef GTK
     WebKitWebFrame *frame = webkit_web_view_get_main_frame(WEBKIT_WEB_VIEW(web_view));
     JSContextRef ctx = webkit_web_frame_get_global_context(frame);
+#else //DFB
+    JSContextRef ctx = lite_webview_get_global_context(web_view);
+#endif
     JSObjectRef global = JSContextGetGlobalObject(ctx);
     JSObjectRef func = JSObjectMakeFunctionWithCallback(ctx, NULL, callback);
     JSStringRef jsname = JSStringCreateWithUTF8CString(name);
@@ -220,13 +237,6 @@ c_o_play (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject,
                 url[urlFixedLen+1] = '\0'; // bug in libeplayer3 for mms
             }
             printf("%s:%s[%d] speed=%f url=%s [%d]\n", __FILE__, __func__, __LINE__, speed, url, urlLen);
-
-#ifdef __sh__
-            play(url);
-#endif
-            // http://www.metafilegenerator.de/ondemand/zdf/hbbtv/geoloc_zdf-none/11/01/110103_aerzte_06_01_11_mtk_vh.mp4
-            // mms://ondemand.msmedia.zdf.newmedia.nacamar.net/zdf/data/msmedia/zdf/11/01/110103_aerzte_06_01_11_mtk_vh.wmv
-            // rtsp://ondemand.quicktime.zdf.newmedia.nacamar.net/zdf/data/quicktime/zdf/11/01/110103_aerzte_06_01_11_mtk_vh.mp4
         }
     }
 
@@ -311,7 +321,11 @@ c_o_seek (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject,
 
 ///////////////////////////////////77
 
+#ifdef GTK
 void registerJsFunctions(WebKitWebView* web_view, int (*fnc)(int type))
+#else //DFB
+void registerJsFunctions(LiteWebView* web_view, int (*fnc)(int type))
+#endif
 {
     g_Callback = fnc;
 
@@ -354,13 +368,13 @@ void registerJsFunctions(WebKitWebView* web_view, int (*fnc)(int type))
 }
 
 // This function can be used to force displaying hbbtvlib errors
+#ifdef GTK
 void registerSpecialJsFunctions(WebKitWebView* web_view)
+#else //DFB
+void registerSpecialJsFunctions(LiteWebView* web_view)
+#endif
 {
     char scriptError[] = "alert(hbbtvlib_lastError);";
     webkit_web_view_execute_script(web_view, scriptError);
-
-    	
-
-
 }
 
