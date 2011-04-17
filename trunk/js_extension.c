@@ -11,7 +11,9 @@ This file contains the js <-> c bindings
 #include <webkit/webkit.h>
 #else //DFB
 #include <webkit/webkitdfb.h>
+#include <glib.h>
 #include <webkit/webview.h>
+
 #endif
 #include <JavaScriptCore/JavaScript.h>
 
