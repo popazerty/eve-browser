@@ -1,4 +1,4 @@
-#killall rcS; killall enigma2; mount -tvfat /dev/sda1 /root; export LD_LIBRARY_PATH=/root/dfb/lib:$LD_LIBRARY_PATH; enigma2
+#killall rcS; killall enigma2; mount -tvfat /dev/sda1 /root; export LD_LIBRARY_PATH=/root/dfb2/lib:$LD_LIBRARY_PATH; enigma2
 
 import os
 import subprocess
@@ -46,17 +46,7 @@ class iEveBrowser():
     
     try:
       print "Loading libeve-browser.so.0.0.0"
-      
-      # Add Library Path to Python path
-      sys.path.append("/root/dfb/lib")
-      
-      # Change Library Search Path
-      if os.environ.has_key("LD_LIBRARY_PATH"):
-        os.environ["LD_LIBRARY_PATH"] = "/root/dfb/lib:" + os.environ["LD_LIBRARY_PATH"]
-      else:
-        os.putenv('LD_LIBRARY_PATH', "/root/dfb/lib")
-      #os.system("export LD_LIBRARY_PATH=/root/dfb/lib:$LD_LIBRARY_PATH")
-      
+     
       lib = resolveFilename(SCOPE_PLUGINS) + "/SystemPlugins/HbbTv/lib/libeve-browser.so.0.0.0"
       self.eveBrowser = ctypes.dlopen(lib, ctypes.RTLD_GLOBAL)
       print "Loading libeve-browser.so.0.0.0 - Done"
@@ -170,39 +160,3 @@ class iEveBrowser():
   
   def setEvtInfoCallback(self, fnc):
     self.evtInfo = fnc
-  
-  def createLibraryLinks():
-    libs = []
-    libs.append("libatk-1.0.so.0")
-    libs.append("libcairo.so.2")
-    libs.append("libdirect-1.4.so.0")
-    libs.append("libdirectfb-1.4.so.0")
-    libs.append("libenchant.so.1")
-    libs.append("libfusion-1.4.so.0")
-    libs.append("libgailutil.so.18")
-    libs.append("libgcrypt.so.11")
-    libs.append("libgdk-directfb-2.0.so.0")
-    libs.append("libgdk-x11-2.0.so.0")
-    libs.append("libgdk_pixbuf-2.0.so.0")
-    libs.append("libgio-2.0.so.0")
-    libs.append("libglib-2.0.so.0")
-    libs.append("libgmodule-2.0.so.0")
-    libs.append("libgnutls.so.26")
-    libs.append("libgobject-2.0.so.0")
-    libs.append("libgpg-error.so.0")
-    libs.append("libgthread-2.0.so.0")
-    libs.append("libgtk-directfb-2.0.so.0")
-    libs.append("libicudata.so.40")
-    libs.append("libicui18n.so.40")
-    libs.append("libicuuc.so.40")
-    libs.append("libpango-1.0.so.0")
-    libs.append("libpangocairo-1.0.so.0")
-    libs.append("libpangoft2-1.0.so.0")
-    libs.append("libpixman-1.so.0")
-    libs.append("libsoup-2.4.so.1")
-    libs.append("libsqlite3.so.0")
-    libs.append("libsysfs.so.2")
-    libs.append("libwebkit-1.0.so.2")
-    
-    for libname in libs:
-      subprocess.Popen(("ln", "-s", "/root/dfb/lib/" + libname, "/usr/lib/" + libname, ))
