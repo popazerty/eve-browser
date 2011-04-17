@@ -237,14 +237,14 @@ void keyPress(char * key, int type)
     
     if(event->key_id != 0) {
         printf("Injecting: event.key_id=%02x\n", event->key_id);
-        pthread_mutex_lock(&mutex);
+        //pthread_mutex_lock(&mutex);
 #if 0 // LITE_INJECTION_WORKS
         lite_webview_handleKeyboardEvent( g_webview, event );
 #else
          if(g_dfb_window != NULL)
              g_dfb_window->SendEvent(g_dfb_window, event);
 #endif
-        pthread_mutex_unlock(&mutex);
+        //pthread_mutex_unlock(&mutex);
         return;
     }
 
