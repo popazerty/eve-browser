@@ -186,17 +186,17 @@ void keyPress(char * key, int type)
     //gettimeofday(&(event->timestamp), NULL);
    
     if     (!strcmp(key, "red")) {
-        event->key_id = DIKI_T; //'t';
-        event->key_symbol =  DIKS_SMALL_T;
+        event->key_id = DIKI_F5; //'t';
+        event->key_symbol =  DIKS_F5;
     } else if(!strcmp(key, "green")) {
-        event->key_id = DIKI_U; //'u';
-        event->key_symbol =  DIKS_SMALL_U;
+        event->key_id = DIKI_F6; //'u';
+        event->key_symbol =  DIKS_F6;
     } else if(!strcmp(key, "yellow")) {
-        event->key_id = DIKI_V; //'v';
-        event->key_symbol =  DIKS_SMALL_V;
+        event->key_id = DIKI_F7; //'v';
+        event->key_symbol =  DIKS_F7;
     } else if(!strcmp(key, "blue")) {
-        event->key_id = DIKI_W; //'w';
-        event->key_symbol =  DIKS_SMALL_W;
+        event->key_id = DIKI_F8; //'w';
+        event->key_symbol =  DIKS_F8;
 
     } else if(!strcmp(key, "up")) {
         event->key_id = DIKI_UP; //f643
@@ -331,8 +331,8 @@ main (int argc, char* argv[])
     //pthread_join(g_BrowserMain, NULL);
     while(1) {
     sleep(2);
-    keyPress("down", 0);
-    keyPress("down", 1);
+    keyPress("blue", 0);
+    keyPress("blue", 1);
     }
 
     return 0;
