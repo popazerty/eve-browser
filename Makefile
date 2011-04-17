@@ -17,10 +17,11 @@ INCPATH       = -I${CDK}/usr/include \
 -I${CDK}/usr/lib/glib-2.0/include \
 -I${CDK}/usr/include/libsoup-2.4 \
 -I${CDK}/usr/include/directfb \
+-I${CDK}/usr/include/directfb-internal \
 -I.
 LINK          = ${BINS}/sh4-linux-g++
 LFLAGS        = -Wl,-O1
-LIBS          = $(SUBLIBS)  -L${CDK}/usr/lib -lwebkitgtk-1.0 -lpng -lm  -lpthread
+LIBS          = $(SUBLIBS)  -L${CDK}/usr/lib  -lfusion -lwebkitgtk-1.0 -lpng -lm  -lpthread
 AR            = ${BINS}/sh4-linux-ar cqs
 RANLIB        = ${BINS}/sh4-linux-ranlib
 

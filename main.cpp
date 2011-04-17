@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <string.h>
 #include <pthread.h>
 #include <linux/input.h>
+#include <unistd.h>
 
 #define DFB
 
@@ -27,6 +29,9 @@
 
 #include <webkit/webkitdfb.h>
 #include <webkit/webview.h>
+
+
+#include <core/input.h>
 #endif
 
 #include <JavaScriptCore/JavaScript.h>
@@ -36,13 +41,18 @@
 
 static int (*g_Callback)(int type);
 static pthread_t g_BrowserMain;
-static char g_url[1024];
+static char g_url[1024] = "http://itv.ard.de/ardtext/";
 static unsigned int g_framebuffer_width = 1280;
 static unsigned int g_framebuffer_height = 720;
+static int g_run = 1;
 
 #ifdef DFB
 static LiteWindow     *g_window   = NULL;
 static LiteWebView    *g_webview  = NULL;
+
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static IDirectFBWindow *g_dfb_window = NULL;
 #endif
 
 ////////////////////////////////////////////
@@ -76,8 +86,24 @@ void setCallback(int (*fnc)(int type))
 #ifdef DFB
 static DFBResult
 on_key_press( DFBWindowEvent* evt, void *ctx ) {
+printf(".");
+   if (evt->key_code == 0 && evt->key_id != 0xf600)
+   {     
+    printf("on_key_press\n");
+    /*printf("\tevt->clazz: %02x\n", evt->clazz);
+    printf("\tevt->type: %02x\n", evt->type);
+    printf("\tevt->flags: %02x\n", evt->flags);
+    printf("\tevt->window_id: %02x\n", evt->window_id);
+    printf("\tevt->key_code: %02x\n", evt->key_code);
+    printf("\tevt->key_id: %02x\n", evt->key_id);
+    printf("\tevt->key_symbol: %02x\n", evt->key_symbol);
+    printf("\tevt->modifiers: %02x\n", evt->modifiers);
+    printf("\tevt->locks: %02x\n", evt->locks);*/
+      
+      return DFB_OK;
+   }
 
-    printf("evt->key_id: %02x\n", evt->key_id);
+    evt->key_id = (DFBInputDeviceKeyIdentifier)0x0;
 
     return DFB_OK;
 }
@@ -85,62 +111,151 @@ on_key_press( DFBWindowEvent* evt, void *ctx ) {
 #define KEY_TYPE_PRESS 0
 #define KEY_TYPE_RELEASE 1
 
+/*
+on_key_press
+        evt->clazz: 02
+        evt->type: 100
+        evt->flags: 00
+        evt->window_id: 01
+        evt->key_code: 6c
+        evt->key_symbol: f003
+        evt->modifiers: 00
+        evt->locks: 00
+on_key_press
+        evt->clazz: 02
+        evt->type: 200
+        evt->flags: 00
+        evt->window_id: 01
+        evt->key_code: 6c
+        evt->key_symbol: f003
+        evt->modifiers: 00
+        evt->locks: 00
+keyPress down press
+on_key_press
+        evt->clazz: 00
+        evt->type: 100
+        evt->flags: 00
+        evt->window_id: 00
+        evt->key_code: 00
+        evt->key_symbol: 00
+        evt->modifiers: 01
+        evt->locks: 00
+keyPress down release
+on_key_press
+        evt->clazz: 00
+        evt->type: 200
+        evt->flags: 00
+        evt->window_id: 00
+        evt->key_code: 00
+        evt->key_symbol: 00
+        evt->modifiers: 01
+        evt->locks: 00
+*/
+
 void keyPress(char * key, int type)
 {
-    printf("%s %s\n", __func__, key);
+    printf("%s %s %s\n", __func__, key, type==0?"press":"release");
 
-    DFBInputEvent event;
+#if 1 //WindowEvent
+    DFBWindowEvent* event = ( DFBWindowEvent*)malloc(sizeof(DFBWindowEvent));
+    memset(event, 0, sizeof(DFBWindowEvent));
+
+    event->clazz = DFEC_WINDOW;
 
     if(type == KEY_TYPE_PRESS)
-        event.type = DIET_KEYPRESS;
+        event->type = DWET_KEYDOWN;
     else if(type == KEY_TYPE_RELEASE)
-        event.type = DIET_KEYRELEASE;
+        event->type = DWET_KEYUP;
     else
         return;
 
-    event.flags    = (DFBInputEventFlags)(DIEF_KEYID | DIEF_KEYCODE);
-   
-    if     (!strcmp(key, "red"))
-        event.key_id = DIKI_F5; //'t';
-    else if(!strcmp(key, "green"))
-        event.key_id = DIKI_F6; //'u';
-    else if(!strcmp(key, "yellow"))
-        event.key_id = DIKI_F7; //'v';
-    else if(!strcmp(key, "blue"))
-        event.key_id = DIKI_F8; //'w';
-
-    else if(!strcmp(key, "up"))
-        event.key_id = DIKI_UP; //f643
-    else if(!strcmp(key, "down")) 
-        event.key_id = DIKI_DOWN; //f644
-    else if(!strcmp(key, "left"))
-        event.key_id = DIKI_LEFT;
-    else if(!strcmp(key, "right"))
-        event.key_id = DIKI_RIGHT;
+    event->flags    = DWEF_NONE;
+    event->window_id = 1;
+#else //InputEvent
+    DFBInputEvent* event = ( DFBInputEvent*)malloc(sizeof(DFBInputEvent));
+    memset(event, 0, sizeof(DFBInputEvent));
     
-    else if(!strcmp(key, "ok"))
-        event.key_id = DIKI_ENTER;
+     if(type == KEY_TYPE_PRESS)
+        event->type = DIET_KEYPRESS;
+    else if(type == KEY_TYPE_RELEASE)
+        event->type = DIET_KEYRELEASE;
+    else
+        return;
+#endif
+
+    //gettimeofday(&(event->timestamp), NULL);
+   
+    if     (!strcmp(key, "red")) {
+        event->key_id = DIKI_T; //'t';
+        event->key_symbol =  DIKS_SMALL_T;
+    } else if(!strcmp(key, "green")) {
+        event->key_id = DIKI_U; //'u';
+        event->key_symbol =  DIKS_SMALL_U;
+    } else if(!strcmp(key, "yellow")) {
+        event->key_id = DIKI_V; //'v';
+        event->key_symbol =  DIKS_SMALL_V;
+    } else if(!strcmp(key, "blue")) {
+        event->key_id = DIKI_W; //'w';
+        event->key_symbol =  DIKS_SMALL_W;
+
+    } else if(!strcmp(key, "up")) {
+        event->key_id = DIKI_UP; //f643
+        event->key_symbol =  DIKS_CURSOR_DOWN;
+    } else if(!strcmp(key, "down")) {
+        event->key_id = DIKI_DOWN;
+        event->key_symbol =  DIKS_CURSOR_DOWN; //(DFBInputDeviceKeySymbol)0xf003;
+    } else if(!strcmp(key, "left")) {
+        event->key_id = DIKI_LEFT;
+        event->key_symbol =  DIKS_CURSOR_LEFT;
+    } else if(!strcmp(key, "right")) {
+        event->key_id = DIKI_RIGHT;
+        event->key_symbol =  DIKS_CURSOR_RIGHT;
+    
+    } else if(!strcmp(key, "ok")) {
+        event->key_id = DIKI_ENTER;
+        event->key_symbol =  DIKS_ENTER;
 
     //TODO: Confirm these
-    else if(!strcmp(key, "play"))
-        event.key_id = DIKI_P;
-    else if(!strcmp(key, "pause"))
-        event.key_id = DIKI_P; // PAUSE IS Q but it seems that P is Toggle PlayPause
-    else if(!strcmp(key, "stop"))
-        event.key_id = DIKI_S;
-    else if(!strcmp(key, "rewind"))
-        event.key_id = DIKI_R;
-    else if(!strcmp(key, "fastforward"))
-        event.key_id = DIKI_F;
-
-    if(event.key_id != 0) {
-        DFBEvent evt;
-        evt.input = event;
-        lite_webview_handleKeyboardEvent( g_webview, evt );
+    } else if(!strcmp(key, "play")) {
+        event->key_id = DIKI_P;
+        event->key_symbol =  DIKS_CAPITAL_P;
+    } else if(!strcmp(key, "pause")) {
+        event->key_id = DIKI_P; // PAUSE IS Q but it seems that P is Toggle PlayPause
+        event->key_symbol =  DIKS_CAPITAL_P;
+    } else if(!strcmp(key, "stop")) {
+        event->key_id = DIKI_S;
+        event->key_symbol =  DIKS_CAPITAL_S;
+    } else if(!strcmp(key, "rewind")) {
+        event->key_id = DIKI_R;
+        event->key_symbol =  DIKS_CAPITAL_R;
+    } else if(!strcmp(key, "fastforward")) {
+        event->key_id = DIKI_F;
+        event->key_symbol =  DIKS_CAPITAL_F;
+    } else {
+        event->key_id = (DFBInputDeviceKeyIdentifier)0;
+    }
+    
+    if(event->key_id != 0) {
+        printf("Injecting: event.key_id=%02x\n", event->key_id);
+        pthread_mutex_lock(&mutex);
+#if 0 // LITE_INJECTION_WORKS
+        lite_webview_handleKeyboardEvent( g_webview, event );
+#else
+         if(g_dfb_window != NULL)
+             g_dfb_window->SendEvent(g_dfb_window, event);
+#endif
+        pthread_mutex_unlock(&mutex);
         return;
     }
 
+    free(event);
+
     return;
+}
+
+void on_webview_doc_loaded( LiteWebView *webview, void *data )
+{
+   lite_webview_set_transparent(webview, true);
 }
 
 void *BrowserMain(void * argument)
@@ -150,8 +265,8 @@ void *BrowserMain(void * argument)
     int argc = 0;
     char**argv = NULL;
 
-    unsigned char haveUrl = 0;
-    int argCount = 0;
+
+    pthread_mutex_init (&mutex, NULL);
     
     g_type_init();
     g_thread_init(NULL);
@@ -169,10 +284,10 @@ void *BrowserMain(void * argument)
     DFBRectangle webviewRect       = {   0,  0, config.width, config.height };
 
     lite_new_window( NULL, &windowRect, DWCAPS_NONE, liteNoWindowTheme, "WebKitDFB", &g_window );
-
-    //webkit_set_lite_global_mainwin(window);
-
+    
     lite_new_webview( LITE_BOX(g_window), &webviewRect, liteDefaultWebViewTheme, &g_webview);
+
+    lite_on_webview_doc_loaded ( g_webview, on_webview_doc_loaded, NULL );
 
     lite_on_raw_window_keyboard(g_window, on_key_press, g_webview );
 
@@ -180,27 +295,67 @@ void *BrowserMain(void * argument)
 
     lite_set_window_opacity(g_window, 0xff);
 
+g_window->bg.enabled = DFB_FALSE;
+    //lite_set_window_background_color(g_window, 0xff, 0, 0, 0xff);
+
     registerJsFunctions(g_webview, g_Callback);
 
-    lite_webview_load(g_webview, "http://itv.ard.de/ardtext");
+    lite_webview_load(g_webview, g_url);
+    lite_webview_set_transparent(g_webview, true);
 
-    while (true) {
+    // FAKE KEY INTERFACE
+    //IDirectFB *dfb;
+    //dfb = lite_get_dfb_interface();
+    //IDirectFBDisplayLayer *layer = NULL;
+    //dfb->GetDisplayLayer(dfb, DLID_PRIMARY, &layer);
+    layer->GetWindow(layer, 1, &g_dfb_window);
+
+    g_run = 1;
+    while (g_run) {
+        pthread_mutex_lock(&mutex);
+
         g_main_context_iteration(NULL, FALSE);
-        lite_window_event_loop(g_window, 20);
+        lite_window_event_loop(g_window, 1);
+        pthread_mutex_unlock(&mutex);
     }
 
    lite_close();
 
    return NULL;
 }
-
+#include <unistd.h>
 int
 main (int argc, char* argv[])
 {
     pthread_create(&g_BrowserMain, NULL, BrowserMain, NULL);
-    while(1);
+    //pthread_join(g_BrowserMain, NULL);
+    while(1) {
+    sleep(2);
+    keyPress("down", 0);
+    keyPress("down", 1);
+    }
 
     return 0;
+}
+
+void loadEveBrowser()
+{
+}
+
+void unloadEveBrowser()
+{
+    g_run = 0;
+}
+
+void show()
+{
+    pthread_create(&g_BrowserMain, NULL, BrowserMain, NULL);
+}
+
+void hide()
+{
+    printf("%s:%d\n", __func__, __LINE__);
+    //gtk_widget_hide_all (g_window);
 }
 
 #endif
