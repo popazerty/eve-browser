@@ -214,6 +214,37 @@ void keyPress(char * key, int type)
     } else if(!strcmp(key, "ok")) {
         event->key_id = DIKI_ENTER;
         event->key_symbol =  DIKS_ENTER;
+    
+    } else if(!strcmp(key, "1")) {
+        event->key_id = DIKI_1;
+        event->key_symbol =  DIKS_2;
+    } else if(!strcmp(key, "2")) {
+        event->key_id = DIKI_2;
+        event->key_symbol =  DIKS_2;
+    } else if(!strcmp(key, "3")) {
+        event->key_id = DIKI_3;
+        event->key_symbol =  DIKS_3;
+    } else if(!strcmp(key, "4")) {
+        event->key_id = DIKI_4;
+        event->key_symbol =  DIKS_4;
+    } else if(!strcmp(key, "5")) {
+        event->key_id = DIKI_5;
+        event->key_symbol =  DIKS_5;
+    } else if(!strcmp(key, "6")) {
+        event->key_id = DIKI_6;
+        event->key_symbol =  DIKS_6;
+    } else if(!strcmp(key, "7")) {
+        event->key_id = DIKI_7;
+        event->key_symbol =  DIKS_7;
+    } else if(!strcmp(key, "8")) {
+        event->key_id = DIKI_8;
+        event->key_symbol =  DIKS_8;
+    } else if(!strcmp(key, "9")) {
+        event->key_id = DIKI_9;
+        event->key_symbol =  DIKS_9;
+    } else if(!strcmp(key, "0")) {
+        event->key_id = DIKI_0;
+        event->key_symbol =  DIKS_0;
 
     //TODO: Confirm these
     } else if(!strcmp(key, "play")) {

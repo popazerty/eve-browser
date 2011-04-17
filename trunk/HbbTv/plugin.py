@@ -34,7 +34,7 @@ class EveBrowser(Screen):
     self.eveBrowser.loadPage(url)
     print "d"
     #TODO: Add addionional keys for routing to browser
-    self["eveBrowserActions"] = ActionMap(["OkCancelActions", "ColorActions", "DirectionActions"],
+    self["eveBrowserActions"] = ActionMap(["OkCancelActions", "ColorActions", "DirectionActions", "NumberActions"],
     {
       "red": self.keyRed,
       "green": self.keyGreen,
@@ -45,7 +45,16 @@ class EveBrowser(Screen):
       "left": self.keyLeft,
       "right": self.keyRight,
       "ok": self.keyOk,
-      "cancel": self.close,
+      "1": self.key1,
+      "2": self.key2,
+      "3": self.key3,
+      "4": self.key4,
+      "5": self.key5,
+      "6": self.key6,
+      "7": self.key7,
+      "8": self.key8,
+      "9": self.key9,
+      "0": self.key0,
     }, -2)
     
 
@@ -82,6 +91,36 @@ class EveBrowser(Screen):
   
   def keyRight(self):
     self.keyPressed("right")
+  
+  def key1(self):
+    self.keyPressed("1")
+  
+  def key2(self):
+    self.keyPressed("2")
+  
+  def key3(self):
+    self.keyPressed("3")
+  
+  def key4(self):
+    self.keyPressed("4")
+  
+  def key5(self):
+    self.keyPressed("5")
+  
+  def key6(self):
+    self.keyPressed("6")
+  
+  def key7(self):
+    self.keyPressed("7")
+  
+  def key8(self):
+    self.keyPressed("8")
+  
+  def key9(self):
+    self.keyPressed("9")
+  
+  def key0(self):
+    self.keyPressed("0")
   
   def keyPressed(self, key):
     self.eveBrowser.keyPress(key, self.eveBrowser.KEY_TYPE_PRESS)
