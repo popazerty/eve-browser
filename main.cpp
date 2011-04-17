@@ -200,7 +200,7 @@ void keyPress(char * key, int type)
 
     } else if(!strcmp(key, "up")) {
         event->key_id = DIKI_UP; //f643
-        event->key_symbol =  DIKS_CURSOR_DOWN;
+        event->key_symbol =  DIKS_CURSOR_UP;
     } else if(!strcmp(key, "down")) {
         event->key_id = DIKI_DOWN;
         event->key_symbol =  DIKS_CURSOR_DOWN; //(DFBInputDeviceKeySymbol)0xf003;
@@ -258,6 +258,15 @@ void on_webview_doc_loaded( LiteWebView *webview, void *data )
    lite_webview_set_transparent(webview, true);
 }
 
+static int timer_id;
+
+static DFBResult timeout_cb(void* data)
+{
+    g_main_context_iteration(NULL, FALSE);
+    lite_enqueue_window_timeout(200, timeout_cb, NULL, &timer_id);
+    return DFB_OK;
+}
+
 void *BrowserMain(void * argument)
 {
     printf("%s:%d\n", __func__, __LINE__);
@@ -310,6 +319,7 @@ g_window->bg.enabled = DFB_FALSE;
     //dfb->GetDisplayLayer(dfb, DLID_PRIMARY, &layer);
     layer->GetWindow(layer, 1, &g_dfb_window);
 
+    lite_enqueue_window_timeout(200, timeout_cb, NULL, &timer_id);
     g_run = 1;
     while (g_run) {
         pthread_mutex_lock(&mutex);
