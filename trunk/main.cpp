@@ -105,7 +105,7 @@ printf(".");
 
     evt->key_id = (DFBInputDeviceKeyIdentifier)0x0;
 
-    return DFB_OK;
+    return DFB_FAILURE;
 }
 
 #define KEY_TYPE_PRESS 0
