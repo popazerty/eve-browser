@@ -36,23 +36,27 @@ class iEveBrowser():
   
   eveBrowser = None
   evtInfo = None
-
   
   def __init__(self):
     #os.system('export DFBARGS="pixelformat=ARGB,no-cursor,bg-none')
     os.environ["DFBARGS"] = "pixelformat=ARGB,no-cursor,bg-none,no-linux-input-grab"
-
-
+    
     
     try:
-      print "Loading libeve-browser.so.0.0.0"
-     
-      lib = resolveFilename(SCOPE_PLUGINS) + "/SystemPlugins/HbbTv/lib/libeve-browser.so.0.0.0"
+      print "Loading libevebrowser.so.0.0.0"
+      lib = resolveFilename(SCOPE_PLUGINS) + "/SystemPlugins/HbbTv/lib/libevebrowser.so.0.0.0"
       self.eveBrowser = ctypes.dlopen(lib, ctypes.RTLD_GLOBAL)
-      print "Loading libeve-browser.so.0.0.0 - Done"
+      print "Loading libevebrowser.so.0.0.0 - Done"
     except Exception, ex:
-      print "Loading libeve-browser.so.0.0.0 - Failed (%s)" % ex
-      return
+      print "Loading libevebrowser.so.0.0.0 - Failed (%s)" % ex
+      try:
+        print "Loading libevebrowser.so.0.0.0"
+        lib = "/usr/lib/libevebrowser.so.0.0.0"
+        self.eveBrowser = ctypes.dlopen(lib, ctypes.RTLD_GLOBAL)
+        print "Loading libevebrowser.so.0.0.0 - Done"
+      except Exception, ex:
+        print "Loading libevebrowser.so.0.0.0 - Failed (%s)" % ex
+        return
     
     try:
       print "Registering functions"
