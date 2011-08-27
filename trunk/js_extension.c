@@ -9,12 +9,13 @@ This file contains the js <-> c bindings
 
 #ifdef GTK
 #include <webkit/webkit.h>
-#else //DFB
+#endif
+#ifdef DFB
 #include <webkit/webkitdfb.h>
 #include <glib.h>
 #include <webkit/webview.h>
-
 #endif
+
 #include <JavaScriptCore/JavaScript.h>
 
 #include "js_debug.h"
@@ -33,14 +34,16 @@ void webkit_web_view_execute_script(LiteWebView* web_view, char* script)
 // Registering single funxtions
 #ifdef GTK
 void register_javascript_function(WebKitWebView* web_view, const char *name, JSObjectCallAsFunctionCallback callback)
-#else //DFB
+#endif
+#ifdef DFB
 void register_javascript_function(LiteWebView* web_view, const char *name, JSObjectCallAsFunctionCallback callback)
 #endif
 {
 #ifdef GTK
     WebKitWebFrame *frame = webkit_web_view_get_main_frame(WEBKIT_WEB_VIEW(web_view));
     JSContextRef ctx = webkit_web_frame_get_global_context(frame);
-#else //DFB
+#endif
+#ifdef DFB
     JSContextRef ctx = lite_webview_get_global_context(web_view);
 #endif
     JSObjectRef global = JSContextGetGlobalObject(ctx);
@@ -325,7 +328,8 @@ c_o_seek (JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject,
 
 #ifdef GTK
 void registerJsFunctions(WebKitWebView* web_view, int (*fnc)(int type))
-#else //DFB
+#endif
+#ifdef DFB
 void registerJsFunctions(LiteWebView* web_view, int (*fnc)(int type))
 #endif
 {
@@ -372,7 +376,8 @@ void registerJsFunctions(LiteWebView* web_view, int (*fnc)(int type))
 // This function can be used to force displaying hbbtvlib errors
 #ifdef GTK
 void registerSpecialJsFunctions(WebKitWebView* web_view)
-#else //DFB
+#endif
+#ifdef DFB
 void registerSpecialJsFunctions(LiteWebView* web_view)
 #endif
 {

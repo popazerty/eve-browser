@@ -31,7 +31,7 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = main.cpp js_extension.c js_debug.c
+SOURCES       = main.c js_extension.c js_debug.c
 OBJECTS       = main.o js_extension.o js_debug.o
 
 #SOURCES       = main.c js_debug.c js_extension.c css_extension.c
