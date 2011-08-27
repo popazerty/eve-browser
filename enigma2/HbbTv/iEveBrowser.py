@@ -39,7 +39,7 @@ class iEveBrowser():
   
   def __init__(self):
     #os.system('export DFBARGS="pixelformat=ARGB,no-cursor,bg-none')
-    os.environ["DFBARGS"] = "pixelformat=ARGB,no-cursor,bg-none,no-linux-input-grab"
+    os.environ["DFBARGS"] = "pixelformat=ARGB,no-cursor,bg-none,no-linux-input-grab,no-vt"
     
     
     try:
@@ -60,14 +60,14 @@ class iEveBrowser():
     
     try:
       print "Registering functions"
-      self._setDimension = ctypes.dlsym(self.eveBrowser, "_Z12setDimensionii")
-      self._loadEveBrowser = ctypes.dlsym(self.eveBrowser, "_Z14loadEveBrowserv")
-      self._unloadEveBrowser = ctypes.dlsym(self.eveBrowser, "_Z16unloadEveBrowserv")
-      self._loadPage = ctypes.dlsym(self.eveBrowser, "_Z8loadPagePc")
-      self._show = ctypes.dlsym(self.eveBrowser, "_Z4showv")
-      self._hide = ctypes.dlsym(self.eveBrowser, "_Z4hidev")
-      self._keyPress = ctypes.dlsym(self.eveBrowser, "_Z8keyPressPci")
-      self._setCallback = ctypes.dlsym(self.eveBrowser, "_Z11setCallbackPFiiE")
+      self._setDimension = ctypes.dlsym(self.eveBrowser, "setDimension")
+      self._loadEveBrowser = ctypes.dlsym(self.eveBrowser, "loadEveBrowser")
+      self._unloadEveBrowser = ctypes.dlsym(self.eveBrowser, "unloadEveBrowser")
+      self._loadPage = ctypes.dlsym(self.eveBrowser, "loadPage")
+      self._show = ctypes.dlsym(self.eveBrowser, "show")
+      self._hide = ctypes.dlsym(self.eveBrowser, "hide")
+      self._keyPress = ctypes.dlsym(self.eveBrowser, "keyPress")
+      self._setCallback = ctypes.dlsym(self.eveBrowser, "setCallback")
       print "Registering functions - Done"
     except Exception, ex:
       print "Registering functions - Failed (%s)" % ex
