@@ -7,8 +7,6 @@
 #include <linux/input.h>
 #include <unistd.h>
 
-#define DFB
-
 #ifdef GTK
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
@@ -29,7 +27,6 @@
 
 #include <webkit/webkitdfb.h>
 #include <webkit/webview.h>
-
 
 #include <core/input.h>
 #endif
@@ -81,7 +78,6 @@ void setCallback(int (*fnc)(int type))
     g_Callback = fnc;
     g_Callback(0);
 }
-
 
 #ifdef DFB
 static DFBResult
@@ -335,7 +331,7 @@ void *BrowserMain(void * argument)
 
     lite_set_window_opacity(g_window, 0xff);
 
-g_window->bg.enabled = DFB_FALSE;
+    g_window->bg.enabled = DFB_FALSE;
     //lite_set_window_background_color(g_window, 0xff, 0, 0, 0xff);
 
     registerJsFunctions(g_webview, g_Callback);
@@ -364,6 +360,7 @@ g_window->bg.enabled = DFB_FALSE;
 
    return NULL;
 }
+
 #include <unistd.h>
 int
 main (int argc, char* argv[])

@@ -17,6 +17,9 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 
+AM_PATH_PYTHON
+AX_PYTHON_DEVEL
+
 
 PKG_CHECK_MODULES(PNG, libpng >= 0.0.1)
 AC_SUBST(PNG_CFLAGS)
@@ -37,4 +40,6 @@ AC_SUBST(DFBINT_LIBS)
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h sys/time.h unistd.h])
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(
+Makefile
+)
