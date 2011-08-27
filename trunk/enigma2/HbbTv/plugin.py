@@ -238,7 +238,7 @@ def main(session, **kwargs):
 
 def Plugins(**kwargs):
 	return [
-		PluginDescriptor(name="HbbTv", description="HbbTv", where = PluginDescriptor.WHERE_TELETEXT, fnc=main),
+		PluginDescriptor(name="HbbTv", description="HbbTv", where = PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=main),
 		PluginDescriptor(name = "HbbTv", description = "HbbTv", where = PluginDescriptor.WHERE_AUTOSTART, fnc = autostart),
 		PluginDescriptor(where = PluginDescriptor.WHERE_SESSIONSTART, fnc = sessionstart)
 	]
