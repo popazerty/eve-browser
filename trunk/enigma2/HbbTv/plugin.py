@@ -45,6 +45,7 @@ class EveBrowser(Screen):
       "left": self.keyLeft,
       "right": self.keyRight,
       "ok": self.keyOk,
+      "cancel": self.keyCancel,
       "1": self.key1,
       "2": self.key2,
       "3": self.key3,
@@ -61,9 +62,9 @@ class EveBrowser(Screen):
   def show(self):
     self.eveBrowser.show()
   
-  def close(self):
+  def keyCancel(self):
     self.eveBrowser.unloadEveBrowser()
-    #fbClass.getInstance().unlock()
+    self.close()
   
   def keyRed(self):
     self.keyPressed("red")
